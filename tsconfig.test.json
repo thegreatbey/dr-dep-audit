@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]   // tests can see Jest globals
+  },
+  "include": ["src/__tests__/**/*"]
+}

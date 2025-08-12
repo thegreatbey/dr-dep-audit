@@ -1,0 +1,4 @@
+severity: moderate
+exclude:
+  - lodash
+  - express
