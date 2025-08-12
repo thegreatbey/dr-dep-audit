@@ -9,6 +9,10 @@ pnpm-debug.log*
 dist/
 coverage/
 *.log
+*.map
+
+# ignore project archives
+*.zip
 
 # OS
 .DS_Store

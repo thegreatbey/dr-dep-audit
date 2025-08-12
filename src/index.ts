@@ -18,7 +18,7 @@ async function loadConfig(cwd: string): Promise<{ severity?: SeverityLevel; excl
     try {
       const raw = await fs.readFile(p, "utf-8");
       if (p.endsWith(".yaml") || p.endsWith(".yml")) {
-        const data = yaml.load(raw) as any;
+        const data = yaml.load(raw) as unknown;
         if (data && typeof data === "object") return data;
       } else {
         return JSON.parse(raw);

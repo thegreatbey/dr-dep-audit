@@ -1,0 +1,14 @@
+# Source & tests (not needed in published package)
+src/
+tests/
+
+# Coverage & logs
+coverage/
+*.log
+*.map
+
+# Configs & misc (optional)
+.vscode/
+.idea/
+.jest/
+*.tsbuildinfo

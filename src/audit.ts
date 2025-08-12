@@ -1,11 +1,12 @@
-import { exec } from "child_process";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import fs from "fs/promises";
 import path from "path";
+import { exec } from "child_process";
 import util from "util";
 import ncu from "npm-check-updates";
 import chalk from "chalk";
 import ora from "ora";
 import Table from "cli-table3";
-import fs from "fs/promises";
 
 const execPromise = util.promisify(exec);
 
@@ -27,28 +28,49 @@ type AuditResult = {
   };
 };
 
-function normalizeAuditJson(raw: any): AuditResult | null {
+// ---- helpers for safe narrowing ----
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+function has<K extends string>(obj: unknown, key: K): obj is Record<K, unknown> {
+  return isObject(obj) && key in obj;
+}
+function isExecError(e: unknown): e is { stdout?: string; stderr?: string; message?: string } {
+  return typeof e === "object" && e !== null && ("stdout" in e || "stderr" in e || "message" in e);
+}
+
+function normalizeAuditJson(raw: unknown): AuditResult | null {
   if (!raw) return null;
 
   // npm v7+ shape
-  if (raw.vulnerabilities && typeof raw.vulnerabilities === "object") {
+  if (has(raw, "vulnerabilities") && isObject(raw.vulnerabilities)) {
     return {
       vulnerabilities: raw.vulnerabilities as Record<string, Vulnerability>,
-      metadata: raw.metadata,
+      metadata: has(raw, "metadata") ? (raw.metadata as AuditResult["metadata"]) : undefined,
     };
   }
 
   // npm v6 "advisories" shape → flatten to a simple record keyed by module name
-  if (raw.advisories && typeof raw.advisories === "object") {
+  if (has(raw, "advisories") && isObject(raw.advisories)) {
     const vulns: Record<string, Vulnerability> = {};
-    for (const adv of Object.values<any>(raw.advisories)) {
-      const name = adv.module_name || adv.name;
+    const advisories = raw.advisories as Record<string, unknown>;
+    for (const advRaw of Object.values(advisories)) {
+      const adv = advRaw as {
+        module_name?: string;
+        name?: string;
+        severity?: string;
+        title?: string;
+        url?: string;
+        vulnerable_versions?: string;
+        fixAvailable?: boolean;
+      };
+      const name = adv.module_name || adv.name || "unknown";
       const severity: SeverityLevel =
-        (adv.severity && adv.severity.toLowerCase()) || "moderate";
+        (adv.severity?.toLowerCase() as SeverityLevel) || "moderate";
       vulns[name] = {
         name,
         severity,
-        via: [{ title: adv.title, url: adv.url }],
+        via: [{ title: adv.title ?? "", url: adv.url ?? "" }],
         range: adv.vulnerable_versions,
         fixAvailable: !!adv.fixAvailable,
       };
@@ -64,14 +86,13 @@ export async function runNpmAudit(projectPath: string): Promise<AuditResult | nu
     const { stdout } = await execPromise("npm audit --json", { cwd: projectPath });
     const json = JSON.parse(stdout);
     return normalizeAuditJson(json);
-  } catch (error: any) {
-    // In some npm versions, non-zero exit code is thrown even with JSON in stderr/stdout
-    const message = String(error?.stdout || error?.stderr || "");
+  } catch (error: unknown) {
+    const message = isExecError(error) ? String(error.stdout ?? error.stderr ?? "") : "";
     try {
       const parsed = JSON.parse(message);
       return normalizeAuditJson(parsed);
     } catch {
-      console.error("Failed to run npm audit:", error?.message || error);
+      console.error("Failed to run npm audit:", isExecError(error) ? error.message : String(error));
       return null;
     }
   }
@@ -199,18 +220,15 @@ export async function auditDependencies(
       const msg = `Vulnerability in ${v.name}: severity=${sev}`;
       // ::warning|error :: message  (annotations without file/line)
       const level = sev === "critical" || sev === "high" ? "error" : "warning";
-      // eslint-disable-next-line no-console
       console.log(`::${level} ::${msg}`);
     }
   }
 
   // Exit code policy: fail on high/critical
-  const shouldFail = vulns.some(
-    (v) => {
-      const sev = (String(v.severity || "none").toLowerCase() as SeverityLevel);
-      return sev === "high" || sev === "critical";
-    }
-  );
+  const shouldFail = vulns.some((v) => {
+    const sev = (String(v.severity || "none").toLowerCase() as SeverityLevel);
+    return sev === "high" || sev === "critical";
+  });
 
   if (shouldFail) {
     console.error(chalk.red("\n❌ High/Critical vulnerabilities found."));

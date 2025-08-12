@@ -1,24 +1,22 @@
-# dep-audit
-[![dep-audit logo](dep-audit.png)](https://github.com/thegreatbey/dep-audit)
+# dr-dep-audit
+[![dr-dep-audit logo](dep-audit.png)](https://github.com/thegreatbey/dr-dep-audit)
 
-**dep-audit** is a lightweight CLI tool to check your Node.js project for:
+# dr-dep-audit
+
+**dr-dep-audit** is a fast CLI to check Node.js projects for:
 - **Outdated dependencies**
-- **Security vulnerabilities** from `npm audit`
+- **Security vulnerabilities** via `npm audit`
 
-It works in local dev and CI/CD pipelines, with pretty colorized output and optional GitHub Actions annotations.
+Colorized tables, config file support, GitHub Actions annotations, and non-zero exit on **high/critical** vulns.
 
 ---
 
-## 🚀 Installation
+## 🚀 Install / Run
 
+Global install:
 ```bash
-npm install -g dep-audit
-```
-
-Or run without installing:
-```bash
-npx dep-audit
-```
+npm install -g dr-dep-audit
+dr-dep-audit --help
 
 ---
 
@@ -26,7 +24,7 @@ npx dep-audit
 
 ### CLI
 ```bash
-dep-audit --severity moderate --exclude lodash,express --gha
+npx dr-dep-audit --severity moderate --exclude lodash,express --gha
 ```
 
 **Options:**
