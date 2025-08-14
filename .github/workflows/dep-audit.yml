@@ -25,19 +25,21 @@ jobs:
       - name: Build dep-audit CLI
         run: npm run build
 
+      # Capture output so we have something to upload/comment on
       - name: Run dep-audit
-        run: node dist/index.js --severity moderate --gha
+        run: node dist/index.js --severity moderate --gha | tee dep-audit-output.txt
 
-      - name: Upload annotations file
+      - name: Upload audit output
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dep-audit-annotations
-          path: annotations.json
+          name: dep-audit-output
+          path: dep-audit-output.txt
+          if-no-files-found: ignore
 
       - name: Comment GitHub annotations
         if: success() || failure()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          path: annotations.json
+          path: dep-audit-output.txt
           header: "Dependency Audit Annotations"
