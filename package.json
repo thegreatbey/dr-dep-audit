@@ -1,6 +1,6 @@
 {
   "name": "dr-dep-audit",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "Audit npm dependencies for outdated packages and vulnerabilities with a fast, colorized CLI. Supports config files, GitHub Actions annotations, and CI/CD integration with automatic failure on high/critical issues.",
   "main": "dist/index.js",
